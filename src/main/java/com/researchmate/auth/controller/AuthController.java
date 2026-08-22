@@ -1,9 +1,7 @@
 package com.researchmate.auth.controller;
 
 
-import com.researchmate.auth.dto.AuthResponse;
-import com.researchmate.auth.dto.LoginRequest;
-import com.researchmate.auth.dto.RegisterRequest;
+import com.researchmate.auth.dto.*;
 import com.researchmate.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +19,14 @@ public class AuthController {
     private  final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request){
-         AuthResponse response=authService.register(request);
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request){
+         RegisterResponse response=authService.register(request);
          return  ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request){
-        AuthResponse response=authService.login(request);
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request){
+        LoginResponse response=authService.login(request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
