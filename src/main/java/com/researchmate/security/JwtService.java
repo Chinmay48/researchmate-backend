@@ -1,4 +1,5 @@
 package com.researchmate.security;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,5 +22,22 @@ public class JwtService {
         Date now=new Date();
         Date expiry=new Date(now.getTime()+expiration);
         return Jwts.builder().subject(email).issuedAt(now).expiration(expiry).signWith(secretKey).compact();
+    }
+
+    public String extractEmail(String token){
+        return extractAllClaims(token).getSubject();
+    }
+
+    private Claims extractAllClaims(String token){
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+    }
+
+    public boolean isTokenValid(String token){
+        try{
+            extractAllClaims(token);
+            return true;
+        }catch(Exception exception) {
+            return false;
+        }
     }
 }
