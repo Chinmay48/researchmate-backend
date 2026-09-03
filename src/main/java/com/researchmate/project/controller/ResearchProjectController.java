@@ -3,6 +3,7 @@ package com.researchmate.project.controller;
 
 import com.researchmate.project.dto.CreateProjectRequest;
 import com.researchmate.project.dto.ProjectResponse;
+import com.researchmate.project.dto.UpdateProjectRequest;
 import com.researchmate.project.repository.ResearchProjectRepository;
 import com.researchmate.project.service.ResearchProjectService;
 import com.researchmate.user.entity.User;
@@ -38,5 +39,11 @@ public class ResearchProjectController {
     public ResponseEntity<ProjectResponse> getProject(@PathVariable UUID projectId,Authentication authentication){
          ProjectResponse project=researchProjectService.getProject(projectId,authentication.getName());
          return ResponseEntity.ok(project);
+    }
+
+    @PutMapping("/{projectId}")
+    public ResponseEntity<ProjectResponse> updateProject(@PathVariable UUID projectId,@Valid @RequestBody UpdateProjectRequest request,Authentication authentication){
+        ProjectResponse project=researchProjectService.updateProject(projectId,request,authentication.getName());
+        return ResponseEntity.ok(project);
     }
 }

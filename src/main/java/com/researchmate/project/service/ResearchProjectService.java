@@ -2,6 +2,7 @@ package com.researchmate.project.service;
 
 import com.researchmate.project.dto.CreateProjectRequest;
 import com.researchmate.project.dto.ProjectResponse;
+import com.researchmate.project.dto.UpdateProjectRequest;
 import com.researchmate.project.entity.ResearchProject;
 import com.researchmate.project.repository.ResearchProjectRepository;
 import com.researchmate.user.entity.User;
@@ -51,5 +52,18 @@ public class ResearchProjectService {
 
         ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new IllegalArgumentException("Project not found"));
         return toResponse(project);
+    }
+
+
+    public ProjectResponse updateProject(UUID projectId, UpdateProjectRequest request,String email){
+        User user=userRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("User not found"));
+        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new IllegalArgumentException("Project not found"));
+        project.setTitle(request.title());
+        project.setDescription(request.description());
+        project.setResearchQuestion(request.researchQuestion());
+
+        ResearchProject updatedProject= researchProjectRepository.save(project);
+        return toResponse(updatedProject);
+
     }
 }
