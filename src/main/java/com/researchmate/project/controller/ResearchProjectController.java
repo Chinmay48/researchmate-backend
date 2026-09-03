@@ -46,4 +46,17 @@ public class ResearchProjectController {
         ProjectResponse project=researchProjectService.updateProject(projectId,request,authentication.getName());
         return ResponseEntity.ok(project);
     }
+
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<Void> deleteProject(
+            @PathVariable UUID projectId,
+            Authentication authentication
+    ) {
+        researchProjectService.deleteProject(
+                projectId,
+                authentication.getName()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 }

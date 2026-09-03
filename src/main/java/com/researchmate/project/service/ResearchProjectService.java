@@ -66,4 +66,11 @@ public class ResearchProjectService {
         return toResponse(updatedProject);
 
     }
+
+    public void deleteProject(UUID projectId,String email){
+        User user=userRepository.findByEmail(email).orElseThrow(()-> new IllegalArgumentException("User not found"));
+        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()-> new IllegalArgumentException("Project not found"));
+        researchProjectRepository.delete(project);
+        return;
+    }
 }
