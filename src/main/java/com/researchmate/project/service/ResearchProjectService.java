@@ -9,7 +9,7 @@ import com.researchmate.user.entity.User;
 import com.researchmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import com.researchmate.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,7 +19,7 @@ public class ResearchProjectService {
     private final ResearchProjectRepository researchProjectRepository;
     private final UserRepository userRepository;
     public ProjectResponse createProject(CreateProjectRequest request, String email){
-        User user=userRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("User not found"));
+        User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("User not found"));
         ResearchProject project=ResearchProject.builder()
                 .title(request.title())
                 .description(request.description())
@@ -43,21 +43,21 @@ public class ResearchProjectService {
         );
     }
     public List<ProjectResponse> getMyProjects(String email){
-        User user=userRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("User not found"));
+        User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("User not found"));
         return researchProjectRepository.findAllByUserId(user.getId()).stream().map(this::toResponse).toList();
     }
 
     public ProjectResponse getProject(UUID projectId,String email){
-        User user=userRepository.findByEmail(email).orElseThrow(()-> new IllegalArgumentException("User not found"));
+        User user=userRepository.findByEmail(email).orElseThrow(()-> new ResourceNotFoundException("User not found"));
 
-        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new IllegalArgumentException("Project not found"));
+        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new ResourceNotFoundException("Project not found"));
         return toResponse(project);
     }
 
 
     public ProjectResponse updateProject(UUID projectId, UpdateProjectRequest request,String email){
-        User user=userRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("User not found"));
-        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new IllegalArgumentException("Project not found"));
+        User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("User not found"));
+        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new ResourceNotFoundException("Project not found"));
         project.setTitle(request.title());
         project.setDescription(request.description());
         project.setResearchQuestion(request.researchQuestion());
@@ -68,8 +68,8 @@ public class ResearchProjectService {
     }
 
     public void deleteProject(UUID projectId,String email){
-        User user=userRepository.findByEmail(email).orElseThrow(()-> new IllegalArgumentException("User not found"));
-        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()-> new IllegalArgumentException("Project not found"));
+        User user=userRepository.findByEmail(email).orElseThrow(()-> new ResourceNotFoundException("User not found"));
+        ResearchProject project=researchProjectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()-> new ResourceNotFoundException("Project not found"));
         researchProjectRepository.delete(project);
         return;
     }
