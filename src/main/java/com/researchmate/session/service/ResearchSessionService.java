@@ -5,6 +5,7 @@ import com.researchmate.project.entity.ResearchProject;
 import com.researchmate.project.repository.ResearchProjectRepository;
 import com.researchmate.session.dto.CreateSessionRequest;
 import com.researchmate.session.dto.SessionResponse;
+import com.researchmate.session.dto.UpdateSessionRequest;
 import com.researchmate.session.entity.ResearchSession;
 import com.researchmate.session.repository.ResearchSessionRepository;
 import com.researchmate.user.entity.User;
@@ -35,6 +36,28 @@ public class ResearchSessionService {
         projectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new ResourceNotFoundException("Project not found"));
         return sessionRepository.findAllByProjectIdAndProjectUserId(projectId,user.getId()).stream().map(this::toResponse).toList();
 
+    }
+
+    public SessionResponse getSession(UUID projectId,UUID sessionId,String email){
+        User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("User not found"));
+        ResearchSession session=sessionRepository.findByIdAndProjectIdAndProjectUserId(sessionId,projectId,user.getId()).orElseThrow(()->new ResourceNotFoundException("Session not found"));
+        return toResponse(session);
+    }
+
+    public SessionResponse updateSession(UUID projectId, UUID sessionId, UpdateSessionRequest request, String email){
+         User user= userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("User not found"));
+         ResearchSession session=sessionRepository.findByIdAndProjectIdAndProjectUserId(sessionId,projectId,user.getId()).orElseThrow(()->new ResourceNotFoundException("Research Session not found"));
+         session.setTitle(request.title());
+         session.setQuery(request.query());
+         ResearchSession updatedSession=sessionRepository.save(session);
+         return toResponse(updatedSession);
+
+    }
+
+    public void deleteSession(UUID projectId,UUID sessionId,String email){
+        User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("User not found"));
+        ResearchSession session=sessionRepository.findByIdAndProjectIdAndProjectUserId(sessionId,projectId,user.getId()).orElseThrow(()->new ResourceNotFoundException("Research Session not found"));
+        sessionRepository.delete(session);
     }
 
     private SessionResponse toResponse(ResearchSession session){

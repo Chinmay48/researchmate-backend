@@ -3,6 +3,8 @@ package com.researchmate.session.controller;
 
 import com.researchmate.session.dto.CreateSessionRequest;
 import com.researchmate.session.dto.SessionResponse;
+import com.researchmate.session.dto.UpdateSessionRequest;
+import com.researchmate.session.entity.ResearchSession;
 import com.researchmate.session.service.ResearchSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,4 +33,32 @@ public class ResearchSessionController {
         List<SessionResponse> sessions=researchSessionService.getProjectSession(projectId,authentication.getName());
         return ResponseEntity.ok(sessions);
     }
+
+    @GetMapping("{sessionId}")
+    public  ResponseEntity<SessionResponse> getSession(@PathVariable UUID projectId,@PathVariable UUID sessionId,Authentication authentication){
+        SessionResponse response=researchSessionService.getSession(projectId,sessionId,authentication.getName());
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("{sessionId}")
+    public ResponseEntity<SessionResponse> updateSession(@PathVariable UUID projectId, @PathVariable UUID sessionId, @Valid @RequestBody UpdateSessionRequest request,Authentication authentication){
+        SessionResponse response=researchSessionService.updateSession(projectId,sessionId,request,authentication.getName());
+        return ResponseEntity.ok(response);
+    }
+    @DeleteMapping("/{sessionId}")
+    public ResponseEntity<Void> deleteSession(
+            @PathVariable UUID projectId,
+            @PathVariable UUID sessionId,
+            Authentication authentication
+    ) {
+
+        researchSessionService.deleteSession(
+                projectId,
+                sessionId,
+                authentication.getName()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
+
 }
