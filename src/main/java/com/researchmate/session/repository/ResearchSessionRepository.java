@@ -12,4 +12,8 @@ public interface ResearchSessionRepository extends JpaRepository<ResearchSession
     List<ResearchSession> findAllByProjectIdAndProjectUserId(UUID projectId,UUID userId);
     Optional<ResearchSession> findByIdAndProjectIdAndProjectUserId(UUID sessionId,UUID projectId,UUID userId);
     List<ResearchSession> findAllByProjectIdAndStatus(UUID projectId, SessionStatus status);
+    Optional<ResearchSession> findByIdAndProjectId(
+            UUID sessionId,
+            UUID projectId
+    );
 }
