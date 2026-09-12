@@ -1,5 +1,6 @@
 package com.researchmate.session.entity;
 
+import com.researchmate.paper.entity.ResearchPaper;
 import com.researchmate.project.entity.ResearchProject;
 import jakarta.persistence.*;
 import lombok.*;
@@ -7,6 +8,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -38,4 +41,12 @@ public class ResearchSession {
     @ManyToOne(fetch = FetchType.LAZY,optional = false)
     @JoinColumn(name = "project_id",nullable = false)
     private ResearchProject project;
+    @OneToMany(
+            mappedBy = "session",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<ResearchPaper> papers = new ArrayList<>();
+
 }
