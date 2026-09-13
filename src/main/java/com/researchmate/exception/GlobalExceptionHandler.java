@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
-
+import com.researchmate.exception.ExternalServiceException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -75,6 +75,21 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ErrorResponse> handleExternalServiceException(
+            ExternalServiceException exception
+    ) {
+
+        ErrorResponse response = new ErrorResponse(
+                exception.getStatus().value(),
+                exception.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity
+                .status(exception.getStatus())
                 .body(response);
     }
 }

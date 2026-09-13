@@ -3,10 +3,13 @@ package com.researchmate.mcp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.researchmate.mcp.model.ArxivPaper;
+import com.researchmate.exception.ExternalServiceException;
+import com.researchmate.mcp.model.AcademicPaper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,34 +22,85 @@ public class McpToolService {
     private final SyncMcpToolCallbackProvider toolCallbackProvider;
     private final ObjectMapper objectMapper;
 
-    public List<ArxivPaper> searchArxiv(String query) {
+    public List<AcademicPaper> searchArxiv(String query) {
 
-        for (ToolCallback toolCallback : toolCallbackProvider.getToolCallbacks()) {
+        for (ToolCallback toolCallback :
+                toolCallbackProvider.getToolCallbacks()) {
 
             System.out.println(
                     "Discovered MCP tool: "
                             + toolCallback.getToolDefinition().name()
             );
 
-            if (toolCallback.getToolDefinition().name().equals("searchArXiv")) {
+            if (toolCallback.getToolDefinition()
+                    .name()
+                    .equals("searchArXiv")) {
 
-                String rawResponse = toolCallback.call(
-                        "{\"query\":\"" + query.replace("\"", "\\\"") + "\"}"
-                );
+                try {
 
-                return parseMcpResponse(rawResponse);
+                    String rawResponse = toolCallback.call(
+                            "{\"query\":\""
+                                    + query.replace("\"", "\\\"")
+                                    + "\"}"
+                    );
+
+                    return parseMcpResponse(rawResponse);
+
+                } catch (ToolExecutionException exception) {
+
+                    System.err.println(
+                            "MCP tool execution failed: "
+                                    + exception.getMessage()
+                    );
+
+                    exception.printStackTrace();
+
+                    String errorMessage = exception.getMessage();
+
+                    if (errorMessage != null
+                            && errorMessage.contains("429")) {
+
+                        throw new ExternalServiceException(
+                                "The academic paper service is rate-limited. Please try again later.",
+                                HttpStatus.TOO_MANY_REQUESTS,
+                                exception
+                        );
+                    }
+
+                    if (errorMessage != null
+                            && errorMessage.contains("503")) {
+
+                        throw new ExternalServiceException(
+                                "The academic paper service is temporarily unavailable. Please try again later.",
+                                HttpStatus.SERVICE_UNAVAILABLE,
+                                exception
+                        );
+                    }
+
+                    throw new ExternalServiceException(
+                            "The academic paper service could not process the request.",
+                            HttpStatus.BAD_GATEWAY,
+                            exception
+                    );
+                }
             }
         }
 
-        throw new IllegalStateException("searchArXiv MCP tool not found");
+        throw new ExternalServiceException(
+                "The searchArXiv MCP tool is unavailable.",
+                HttpStatus.SERVICE_UNAVAILABLE
+        );
     }
 
-    private List<ArxivPaper> parseMcpResponse(String rawResponse) {
+    private List<AcademicPaper> parseMcpResponse(
+            String rawResponse
+    ) {
 
         try {
+
             JsonNode root = objectMapper.readTree(rawResponse);
 
-            List<ArxivPaper> papers = new ArrayList<>();
+            List<AcademicPaper> papers = new ArrayList<>();
 
             for (JsonNode item : root) {
 
@@ -56,13 +110,16 @@ public class McpToolService {
 
                 String text = item.get("text").asText();
 
-                JsonNode paperArray = objectMapper.readTree(text);
+                JsonNode paperArray =
+                        objectMapper.readTree(text);
 
                 for (JsonNode paperNode : paperArray) {
-                    ArxivPaper paper = objectMapper.treeToValue(
-                            paperNode,
-                            ArxivPaper.class
-                    );
+
+                    AcademicPaper paper =
+                            objectMapper.treeToValue(
+                                    paperNode,
+                                    AcademicPaper.class
+                            );
 
                     papers.add(paper);
                 }
@@ -71,8 +128,9 @@ public class McpToolService {
             return papers;
 
         } catch (JsonProcessingException exception) {
+
             throw new IllegalStateException(
-                    "Unable to parse MCP arXiv response",
+                    "Unable to parse MCP academic paper response",
                     exception
             );
         }
