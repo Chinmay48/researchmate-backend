@@ -1,7 +1,6 @@
 package com.researchmate.paper.service;
 
-import com.researchmate.exception.ResourceNotFoundException;
-import com.researchmate.mcp.McpToolService;
+
 import com.researchmate.mcp.model.AcademicPaper;
 import com.researchmate.paper.dto.ResearchPaperResponse;
 import com.researchmate.paper.entity.ResearchPaper;
@@ -27,7 +26,7 @@ public class ResearchPaperService {
     private final ResearchPaperRepository researchPaperRepository;
     private final ResearchSessionRepository researchSessionRepository;
     private final ResearchProjectRepository researchProjectRepository;
-    private final McpToolService mcpToolService;
+
 
     @Transactional
     public List<ResearchPaperResponse> searchAndSavePapers(
@@ -48,8 +47,7 @@ public class ResearchPaperService {
                 .findByIdAndProjectId(sessionId, project.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
-        List<AcademicPaper> academicPapers =
-                mcpToolService.searchArxiv(query);
+        List<AcademicPaper> academicPapers =List.of();
 
         List<ResearchPaper> papersToSave = new ArrayList<>();
 
