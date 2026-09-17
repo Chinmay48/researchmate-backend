@@ -16,10 +16,21 @@ public record LocalPaperResponse(
         Instant publishedAt,
         Instant updatedAt,
         String paperUrl,
-        String pdfUrl
+        String pdfUrl,
+        Double relevanceScore,
+        Boolean titleMatched,
+        Boolean abstractMatched,
+        Boolean authorMatched,
+        Boolean categoryMatched,
+        String highlightedTitle,
+        String highlightedAbstract
 ) {
 
-    public static LocalPaperResponse fromEntity(LocalPaper paper) {
+    public static LocalPaperResponse fromEntity(LocalPaper paper,Double relevanceScore,Boolean titleMatched,
+                                                Boolean abstractMatched,
+                                                Boolean authorMatched,
+                                                Boolean categoryMatched,String highlightedTitle,
+                                                String highlightedAbstract) {
         return new LocalPaperResponse(
                 paper.getId(),
                 paper.getExternalId(),
@@ -31,7 +42,14 @@ public record LocalPaperResponse(
                 paper.getPublishedAt(),
                 paper.getUpdatedAt(),
                 paper.getPaperUrl(),
-                paper.getPdfUrl()
+                paper.getPdfUrl(),
+                relevanceScore,
+                titleMatched,
+                abstractMatched,
+                authorMatched,
+                categoryMatched,
+                highlightedTitle,highlightedAbstract
+
         );
     }
 }
