@@ -37,6 +37,7 @@ public interface LocalPaperRepository extends JpaRepository<LocalPaper, UUID> {
             String categoriesQuery,
             Pageable pageable
     );
+
     @Query(
             value = """
                 SELECT
@@ -51,105 +52,163 @@ public interface LocalPaperRepository extends JpaRepository<LocalPaper, UUID> {
                     updated_at AS updatedAt,
                     paper_url AS paperUrl,
                     pdf_url AS pdfUrl,
-                    ts_rank(
-                        search_vector,
-                        websearch_to_tsquery('english', :query)
+
+                    (
+                        ts_rank(
+                            search_vector,
+                            websearch_to_tsquery('english', :query),
+                            32
+                        )
+                        +
+                        2.0 * ts_rank(
+                            to_tsvector(
+                                'english',
+                                coalesce(title, '')
+                            ),
+                            websearch_to_tsquery('english', :query),
+                            32
+                        )
                     ) AS relevanceScore,
+
                     CASE
-                WHEN to_tsvector('english', coalesce(title, ''))
-                     @@ websearch_to_tsquery('english', :query)
-                THEN true
-                ELSE false
+                        WHEN to_tsvector(
+                            'english',
+                            coalesce(title, '')
+                        ) @@ websearch_to_tsquery('english', :query)
+                        THEN true
+                        ELSE false
                     END AS titleMatched,
+
                     CASE
-                WHEN
-                    to_tsvector('english', coalesce(abstract_text, ''))
-                     @@ websearch_to_tsquery('english', :query)
-                THEN true
-                ELSE false
+                        WHEN to_tsvector(
+                            'english',
+                            coalesce(abstract_text, '')
+                        ) @@ websearch_to_tsquery('english', :query)
+                        THEN true
+                        ELSE false
                     END AS abstractMatched,
+
                     CASE
-                WHEN
-                    to_tsvector('english', coalesce(authors, ''))
-                     @@ websearch_to_tsquery('english', :query)
-                THEN true
-                ELSE false
+                        WHEN to_tsvector(
+                            'english',
+                            coalesce(authors, '')
+                        ) @@ websearch_to_tsquery('english', :query)
+                        THEN true
+                        ELSE false
                     END AS authorMatched,
+
                     CASE
-                WHEN
-                    to_tsvector('english', coalesce(categories, ''))
-                     @@ websearch_to_tsquery('english', :query)
-                THEN true
-                ELSE false
-            END AS categoryMatched,
-             ts_headline(
-                 'english',
-                 title,
-                 websearch_to_tsquery('english', :query),
-                 'StartSel=<mark>, StopSel=</mark>, MaxFragments=1, MaxWords=30, MinWords=10'
-             ) AS highlightedTitle,
-             
-             ts_headline(
-                 'english',
-                 abstract_text,
-                 websearch_to_tsquery('english', :query),
-                 'StartSel=<mark>, StopSel=</mark>, MaxFragments=2, MaxWords=60, MinWords=20'
-             ) AS highlightedAbstract
-                FROM local_papers
-                WHERE search_vector @@ websearch_to_tsquery(
+                        WHEN to_tsvector(
+                            'english',
+                            coalesce(categories, '')
+                        ) @@ websearch_to_tsquery('english', :query)
+                        THEN true
+                        ELSE false
+                    END AS categoryMatched,
+
+                    ts_headline(
                         'english',
-                        :query
+                        title,
+                        websearch_to_tsquery('english', :query),
+                        'StartSel=<mark>, StopSel=</mark>, MaxFragments=1, MaxWords=30, MinWords=10'
+                    ) AS highlightedTitle,
+
+                    ts_headline(
+                        'english',
+                        abstract_text,
+                        websearch_to_tsquery('english', :query),
+                        'StartSel=<mark>, StopSel=</mark>, MaxFragments=2, MaxWords=60, MinWords=20'
+                    ) AS highlightedAbstract
+
+                FROM local_papers
+
+                WHERE search_vector @@ websearch_to_tsquery(
+                    'english',
+                    :query
                 )
+
                 AND (
                     CAST(:category AS text) IS NULL
-                    OR categories ILIKE CONCAT('%', CAST(:category AS text), '%')
+                    OR categories ILIKE CONCAT(
+                        '%',
+                        CAST(:category AS text),
+                        '%'
+                    )
                 )
+
                 AND (
                     CAST(:fromDate AS date) IS NULL
                     OR published_at >= CAST(:fromDate AS date)
                 )
+
                 AND (
                     CAST(:toDate AS date) IS NULL
                     OR published_at < CAST(:toDate AS date) + INTERVAL '1 day'
                 )
+
                 ORDER BY
+
                     CASE
                         WHEN :sort = 'newest'
                         THEN EXTRACT(EPOCH FROM published_at)
                     END DESC,
+
                     CASE
                         WHEN :sort = 'oldest'
                         THEN EXTRACT(EPOCH FROM published_at)
                     END ASC,
+
                     CASE
                         WHEN :sort = 'relevance'
-                        THEN ts_rank(
-                            search_vector,
-                            websearch_to_tsquery('english', :query)
-                        )
+                        THEN
+                            ts_rank(
+                                search_vector,
+                                websearch_to_tsquery('english', :query),
+                                32
+                            )
+                            +
+                            2.0 * ts_rank(
+                                to_tsvector(
+                                    'english',
+                                    coalesce(title, '')
+                                ),
+                                websearch_to_tsquery('english', :query),
+                                32
+                            )
                     END DESC,
+
                     published_at DESC
                 """,
+
             countQuery = """
                 SELECT COUNT(*)
                 FROM local_papers
+
                 WHERE search_vector @@ websearch_to_tsquery(
-                        'english',
-                        :query
+                    'english',
+                    :query
                 )
+
                 AND (
                     CAST(:category AS text) IS NULL
-                    OR categories ILIKE CONCAT('%', CAST(:category AS text), '%')
+                    OR categories ILIKE CONCAT(
+                        '%',
+                        CAST(:category AS text),
+                        '%'
+                    )
                 )
+
                 AND (
                     CAST(:fromDate AS date) IS NULL
                     OR published_at >= CAST(:fromDate AS date)
                 )
+
                 AND (
                     CAST(:toDate AS date) IS NULL
                     OR published_at < CAST(:toDate AS date) + INTERVAL '1 day'
                 )
                 """,
+
             nativeQuery = true
     )
     Page<LocalPaperSearchResult> searchFullText(
@@ -160,5 +219,4 @@ public interface LocalPaperRepository extends JpaRepository<LocalPaper, UUID> {
             @Param("sort") String sort,
             Pageable pageable
     );
-
 }
