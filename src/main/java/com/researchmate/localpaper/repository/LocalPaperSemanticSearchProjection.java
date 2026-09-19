@@ -16,5 +16,7 @@ public interface LocalPaperSemanticSearchProjection {
     String getPaperUrl();
     String getPdfUrl();
 
-    Double getSimilarityScore();
+    Double getKeywordScore();
+    Double getSemanticScore();
+    Double getHybridScore();
 }

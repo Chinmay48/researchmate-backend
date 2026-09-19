@@ -1,7 +1,5 @@
 package com.researchmate.localpaper.dto;
 
-import com.researchmate.localpaper.entity.LocalPaper;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -16,25 +14,8 @@ public record LocalPaperSemanticSearchResult(
         Instant updatedAt,
         String paperUrl,
         String pdfUrl,
-        double similarityScore
+        Double keywordScore,
+        Double semanticScore,
+        Double hybridScore
 ) {
-
-    public static LocalPaperSemanticSearchResult from(
-            LocalPaper paper,
-            double similarityScore
-    ) {
-        return new LocalPaperSemanticSearchResult(
-                paper.getId(),
-                paper.getExternalId(),
-                paper.getTitle(),
-                paper.getAuthors(),
-                paper.getAbstractText(),
-                paper.getCategories(),
-                paper.getPublishedAt(),
-                paper.getUpdatedAt(),
-                paper.getPaperUrl(),
-                paper.getPdfUrl(),
-                similarityScore
-        );
-    }
 }

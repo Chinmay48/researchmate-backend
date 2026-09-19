@@ -1,22 +1,25 @@
 package com.researchmate.localpaper.service;
 
+import com.researchmate.localpaper.dto.LocalPaperSemanticSearchResult;
 import com.researchmate.localpaper.embedding.BgeEmbeddingService;
-import com.researchmate.localpaper.entity.LocalPaper;
-import com.researchmate.localpaper.repository.LocalPaperSemanticSearchRepository;
+import com.researchmate.localpaper.repository.LocalPaperHybridSearchRepository;
+import com.researchmate.localpaper.repository.LocalPaperSemanticSearchProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import com.researchmate.localpaper.dto.LocalPaperSemanticSearchResult;
-import com.researchmate.localpaper.repository.LocalPaperSemanticSearchProjection;
-import org.springframework.data.domain.Page;
-@Service
-public class LocalPaperSemanticSearchService {
-    private final BgeEmbeddingService embeddingService;
-    private final LocalPaperSemanticSearchRepository repository;
-    public LocalPaperSemanticSearchService(BgeEmbeddingService embeddingService,LocalPaperSemanticSearchRepository repository){
-        this.embeddingService=embeddingService;
-        this.repository=repository;
 
+@Service
+public class LocalPaperHybridSearchService {
+
+    private final BgeEmbeddingService embeddingService;
+    private final LocalPaperHybridSearchRepository repository;
+
+    public LocalPaperHybridSearchService(
+            BgeEmbeddingService embeddingService,
+            LocalPaperHybridSearchRepository repository
+    ) {
+        this.embeddingService = embeddingService;
+        this.repository = repository;
     }
 
     public Page<LocalPaperSemanticSearchResult> search(
@@ -33,16 +36,23 @@ public class LocalPaperSemanticSearchService {
         }
 
         if (size < 1 || size > 100) {
-            throw new IllegalArgumentException("Size must be between 1 and 100");
+            throw new IllegalArgumentException(
+                    "Size must be between 1 and 100"
+            );
         }
 
         float[] embedding = embeddingService.generateEmbedding(query);
+
         String vector = toPgVector(embedding);
 
         PageRequest pageable = PageRequest.of(page, size);
 
         Page<LocalPaperSemanticSearchProjection> results =
-                repository.semanticSearch(vector, pageable);
+                repository.hybridSearch(
+                        query,
+                        vector,
+                        pageable
+                );
 
         return results.map(result ->
                 new LocalPaperSemanticSearchResult(
@@ -62,13 +72,11 @@ public class LocalPaperSemanticSearchService {
                 )
         );
     }
-    private String toPgVector(float[] embedding) {
 
-        StringBuilder builder =
-                new StringBuilder("[");
+    private String toPgVector(float[] embedding) {
+        StringBuilder builder = new StringBuilder("[");
 
         for (int i = 0; i < embedding.length; i++) {
-
             if (i > 0) {
                 builder.append(",");
             }
