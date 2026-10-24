@@ -3,6 +3,7 @@ package com.researchmate.session.controller;
 
 import com.researchmate.session.dto.CreateSessionRequest;
 import com.researchmate.session.dto.SessionResponse;
+import com.researchmate.session.dto.SessionWorkspaceResponse;
 import com.researchmate.session.dto.UpdateSessionRequest;
 import com.researchmate.session.entity.ResearchSession;
 import com.researchmate.session.service.ResearchSessionService;
@@ -12,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
+import com.researchmate.session.service.SessionWorkspaceService;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ResearchSessionController {
     private final ResearchSessionService researchSessionService;
-
+    private final SessionWorkspaceService sessionWorkspaceService;
     @PostMapping
     public ResponseEntity<SessionResponse> createSession(@PathVariable UUID projectId, @Valid @RequestBody CreateSessionRequest request, Authentication authentication){
         SessionResponse response=researchSessionService.createSession(projectId,request,authentication.getName());
@@ -59,6 +60,22 @@ public class ResearchSessionController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{sessionId}/workspace")
+    public ResponseEntity<SessionWorkspaceResponse> getSessionWorkspace(
+            @PathVariable UUID projectId,
+            @PathVariable UUID sessionId,
+            Authentication authentication
+    ) {
+        SessionWorkspaceResponse response =
+                sessionWorkspaceService.getWorkspace(
+                        projectId,
+                        sessionId,
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(response);
     }
 
 }

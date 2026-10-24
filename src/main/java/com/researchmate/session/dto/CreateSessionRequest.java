@@ -1,6 +1,8 @@
 package com.researchmate.session.dto;
 
+import com.researchmate.session.entity.SearchType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSessionRequest (
@@ -10,7 +12,10 @@ public record CreateSessionRequest (
 
         @NotBlank(message = "Research query is required")
         @Size(max = 5000,message = "Research query cannot exceed 5000 characters")
-        String query
+        String query,
+
+        @NotNull(message="Search type is required")
+        SearchType searchType
 
 ){
 

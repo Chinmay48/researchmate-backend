@@ -1,14 +1,14 @@
 package com.researchmate.localpaper.service;
 
 import com.researchmate.localpaper.embedding.BgeEmbeddingService;
-import com.researchmate.localpaper.entity.LocalPaper;
+
 import com.researchmate.localpaper.repository.LocalPaperSemanticSearchRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import com.researchmate.localpaper.dto.LocalPaperSemanticSearchResult;
 import com.researchmate.localpaper.repository.LocalPaperSemanticSearchProjection;
-import org.springframework.data.domain.Page;
+
 @Service
 public class LocalPaperSemanticSearchService {
     private final BgeEmbeddingService embeddingService;

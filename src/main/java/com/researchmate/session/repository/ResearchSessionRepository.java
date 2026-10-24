@@ -17,3 +17,4 @@ public interface ResearchSessionRepository extends JpaRepository<ResearchSession
             UUID projectId
     );
 }
+

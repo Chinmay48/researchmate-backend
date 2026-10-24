@@ -2,14 +2,14 @@ package com.researchmate.localpaper.service;
 
 
 import com.researchmate.localpaper.dto.LocalPaperResponse;
-import com.researchmate.localpaper.entity.LocalPaper;
+
 import com.researchmate.localpaper.repository.LocalPaperRepository;
 import com.researchmate.localpaper.repository.LocalPaperSearchResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

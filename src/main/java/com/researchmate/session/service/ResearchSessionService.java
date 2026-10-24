@@ -8,11 +8,12 @@ import com.researchmate.session.dto.SessionResponse;
 import com.researchmate.session.dto.UpdateSessionRequest;
 import com.researchmate.session.entity.ResearchSession;
 import com.researchmate.session.repository.ResearchSessionRepository;
+import com.researchmate.sessionpaper.service.SessionPaperRetrievalService;
 import com.researchmate.user.entity.User;
 import com.researchmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import com.researchmate.session.entity.SessionStatus;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,14 +23,45 @@ public class ResearchSessionService {
     private final UserRepository userRepository;
     private final ResearchProjectRepository projectRepository;
     private final ResearchSessionRepository sessionRepository;
+    private final SessionPaperRetrievalService sessionPaperRetrievalService;
 
-    public SessionResponse createSession(UUID projectId, CreateSessionRequest request,String email){
-        User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("User not found"));
-        ResearchProject project=projectRepository.findByIdAndUserId(projectId,user.getId()).orElseThrow(()->new ResourceNotFoundException("Project not found"));
-        ResearchSession researchSession=ResearchSession.builder().title(request.title()).query(request.query()).project(project).build();
-        ResearchSession savedSession=sessionRepository.save(researchSession);
-        return toResponse(savedSession);
+    public SessionResponse createSession(
+            UUID projectId,
+            CreateSessionRequest request,
+            String email
+    ) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        ResearchProject project = projectRepository
+                .findByIdAndUserId(projectId, user.getId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Project not found"));
+
+        ResearchSession session = ResearchSession.builder()
+                .title(request.title())
+                .query(request.query())
+                .searchType(request.searchType())
+                .status(SessionStatus.RUNNING)
+                .project(project)
+                .build();
+
+        ResearchSession savedSession = sessionRepository.save(session);
+
+        try {
+            sessionPaperRetrievalService.retrieveAndPersist(savedSession);
+            savedSession.setStatus(SessionStatus.COMPLETED);
+        } catch (RuntimeException exception) {
+            savedSession.setStatus(SessionStatus.FAILED);
+            sessionRepository.save(savedSession);
+            throw exception;
+        }
+
+        ResearchSession completedSession = sessionRepository.save(savedSession);
+        return toResponse(completedSession);
     }
+
 
     public List<SessionResponse> getProjectSession(UUID projectId,String email){
         User user =userRepository.findByEmail(email).orElseThrow(()-> new ResourceNotFoundException("User not found"));
@@ -66,6 +98,7 @@ public class ResearchSessionService {
                 session.getProject().getId(),
                 session.getTitle(),
                 session.getQuery(),
+                session.getSearchType(),
                 session.getStatus(),
                 session.getCreatedAt(),
                 session.getUpdatedAt()
