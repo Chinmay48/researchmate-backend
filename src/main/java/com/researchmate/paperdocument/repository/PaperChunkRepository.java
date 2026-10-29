@@ -2,7 +2,9 @@ package com.researchmate.paperdocument.repository;
 
 import com.researchmate.paperdocument.entity.PaperChunk;
 import org.springframework.data.jpa.repository.JpaRepository;
-
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,4 +20,14 @@ public interface PaperChunkRepository
     long countByPaperDocument_Id(UUID paperDocumentId);
 
     void deleteAllByPaperDocument_Id(UUID paperDocumentId);
+    @Modifying
+    @Query(value = """
+        UPDATE paper_chunks
+        SET embedding = CAST(:embedding AS vector)
+        WHERE id = :chunkId
+        """, nativeQuery = true)
+    int updateEmbedding(
+            @Param("chunkId") UUID chunkId,
+            @Param("embedding") String embedding
+    );
 }

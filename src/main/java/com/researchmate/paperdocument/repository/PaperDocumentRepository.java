@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 import java.util.UUID;
-
+import java.util.List;
 public interface PaperDocumentRepository
         extends JpaRepository<PaperDocument, UUID> {
 
@@ -35,5 +35,51 @@ public interface PaperDocumentRepository
     int insertIfAbsent(
             @Param("id") UUID id,
             @Param("paperId") UUID paperId
+    );
+
+    @Modifying
+    @Query(value = """
+        UPDATE paper_documents
+        SET status = 'PROCESSING',
+            attempt_count = attempt_count + 1,
+            started_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP,
+            last_error = NULL
+        WHERE id = :documentId
+          AND status = 'PENDING'
+        """, nativeQuery = true)
+    int claimPendingDocument(@Param("documentId") UUID documentId);
+
+    List<PaperDocument> findTop10ByStatusOrderByCreatedAtAsc(
+            PaperProcessingStatus status
+    );
+    @Modifying
+    @Query(value = """
+        UPDATE paper_documents
+        SET status = 'COMPLETED',
+            completed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP,
+            last_error = NULL
+        WHERE id = :documentId
+          AND status = 'PROCESSING'
+        """, nativeQuery = true)
+    int markCompleted(@Param("documentId") UUID documentId);
+
+    @Modifying
+    @Query(value = """
+        UPDATE paper_documents
+        SET status = CASE
+                WHEN attempt_count < :maxAttempts THEN 'PENDING'
+                ELSE 'FAILED'
+            END,
+            last_error = :error,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = :documentId
+          AND status = 'PROCESSING'
+        """, nativeQuery = true)
+    int recordFailure(
+            @Param("documentId") UUID documentId,
+            @Param("maxAttempts") int maxAttempts,
+            @Param("error") String error
     );
 }
