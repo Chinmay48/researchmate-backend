@@ -2,6 +2,7 @@ package com.researchmate.paperdocument.repository;
 
 import com.researchmate.paperdocument.entity.PaperDocument;
 import com.researchmate.paperdocument.entity.PaperProcessingStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -50,7 +51,7 @@ public interface PaperDocumentRepository
         """, nativeQuery = true)
     int claimPendingDocument(@Param("documentId") UUID documentId);
 
-    List<PaperDocument> findTop10ByStatusOrderByCreatedAtAsc(
+    Optional<PaperDocument> findFirstByStatusOrderByCreatedAtAsc(
             PaperProcessingStatus status
     );
     @Modifying
@@ -82,4 +83,28 @@ public interface PaperDocumentRepository
             @Param("maxAttempts") int maxAttempts,
             @Param("error") String error
     );
+
+    @Modifying
+    @Query(value = """
+    UPDATE paper_documents
+    SET status = CASE
+            WHEN attempt_count < :maxAttempts THEN 'PENDING'
+            ELSE 'FAILED'
+        END,
+        last_error = CASE
+            WHEN attempt_count < :maxAttempts
+                THEN 'Recovered after processing timeout'
+            ELSE 'Maximum processing attempts exceeded after timeout'
+        END,
+        started_at = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE status = 'PROCESSING'
+      AND started_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'
+    """, nativeQuery = true)
+    int recoverStaleDocuments(
+            @Param("maxAttempts") int maxAttempts
+    );
+
+    @EntityGraph(attributePaths = "paper")
+    Optional<PaperDocument> findWithPaperById(UUID id);
 }

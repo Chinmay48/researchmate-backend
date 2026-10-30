@@ -10,10 +10,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -32,42 +34,50 @@ public class PaperDocumentWorkerService {
     private final PdfTextExtractionService extractionService;
     private final PaperChunkingService chunkingService;
     private final PaperChunkPersistenceService persistenceService;
-
+    private final PaperDocumentClaimService claimService;
+    private final PaperDocumentCompletionService completionService;
     @Value("${researchmate.documents.max-attempts:3}")
     private int maxAttempts;
 
     @Scheduled(fixedDelayString = "${researchmate.documents.poll-delay-ms:5000}")
     public void processPendingDocuments() {
-        List<PaperDocument> pendingDocuments =
-                documentRepository.findTop10ByStatusOrderByCreatedAtAsc(
+
+        int recovered = claimService.recoverStaleDocuments();
+
+        if (recovered > 0) {
+            log.warn("Recovered {} stale paper processing jobs", recovered);
+        }
+
+        Optional<PaperDocument> pendingDocument =
+                documentRepository.findFirstByStatusOrderByCreatedAtAsc(
                         PaperProcessingStatus.PENDING
                 );
 
-        for (PaperDocument document : pendingDocuments) {
+        pendingDocument.ifPresent(document -> {
             try {
                 processDocument(document.getId());
-            } catch (Exception exception) {
+            } catch (Exception ex) {
                 log.error(
-                        "Unexpected error processing document {}",
+                        "Failed to process paper document {}",
                         document.getId(),
-                        exception
+                        ex
                 );
             }
-        }
+        });
     }
 
     public void processDocument(UUID documentId) {
-        if (!claimDocument(documentId)) {
+        if (!claimService.claimDocument(documentId)) {
             return;
         }
 
         Path pdfPath = null;
 
         try {
-            PaperDocument document = documentRepository.findById(documentId)
-                    .orElseThrow(() ->
-                            new IllegalStateException("Document not found"));
-
+            PaperDocument document = documentRepository.findWithPaperById(documentId)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Paper document not found: " + documentId
+                    ));
             String pdfUrl = document.getPaper().getPdfUrl();
 
             if (pdfUrl == null || pdfUrl.isBlank()) {
@@ -83,20 +93,17 @@ public class PaperDocumentWorkerService {
                 throw new IOException("No chunks were extracted");
             }
 
-            persistenceService.persistChunks(document, chunks);
-
-            if (documentRepository.markCompleted(documentId) != 1) {
-                throw new IllegalStateException(
-                        "Could not mark document as completed"
-                );
-            }
+            int persistedCount = completionService.completeDocument(
+                    documentId,
+                    document,
+                    chunks
+            );
 
             log.info(
                     "Processed document {} with {} chunks",
                     documentId,
-                    chunks.size()
+                    persistedCount
             );
-
         } catch (Exception exception) {
             String safeError = exception.getMessage();
 
@@ -110,7 +117,7 @@ public class PaperDocumentWorkerService {
             }
 
             try {
-                documentRepository.recordFailure(
+                claimService.recordFailure(
                         documentId,
                         maxAttempts,
                         safeError
@@ -144,8 +151,5 @@ public class PaperDocumentWorkerService {
         }
     }
 
-    @Transactional
-    protected boolean claimDocument(UUID documentId) {
-        return documentRepository.claimPendingDocument(documentId) == 1;
-    }
+
 }
