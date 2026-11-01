@@ -43,7 +43,10 @@ public class PdfTextExtractionService {
                 stripper.setStartPage(page);
                 stripper.setEndPage(page);
 
-                String text = stripper.getText(document).trim();
+                String text = stripper.getText(document);
+
+// Remove NULL characters because PostgreSQL TEXT cannot store them
+                text = text.replace(String.valueOf((char) 0), "").trim();
 
                 if (!text.isBlank()) {
                     extractedPages.add(new ExtractedPage(page, text));
