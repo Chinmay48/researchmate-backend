@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -14,7 +15,40 @@ public class PaperChunkRetrievalService {
 
     private final BgeEmbeddingService embeddingService;
     private final PaperChunkRepository chunkRepository;
+    public List<RetrievedChunk> retrieveRelevantChunks(
+            String query,
+            List<UUID> paperIds,
+            int topK
+    ) {
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException("Query cannot be empty");
+        }
 
+        if (paperIds == null || paperIds.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "At least one paper must be selected"
+            );
+        }
+
+        if (topK < 1 || topK > 50) {
+            throw new IllegalArgumentException(
+                    "topK must be between 1 and 50"
+            );
+        }
+
+        // Generate query embedding
+        float[] embedding = embeddingService.generateEmbedding(query);
+
+        // Convert embedding to pgvector format
+        String vector = toVectorString(embedding);
+
+        // Search only within the selected papers
+        return chunkRepository.findSimilarChunksInPapers(
+                vector,
+                paperIds,
+                topK
+        );
+    }
     public List<RetrievedChunk> retrieveRelevantChunks(
             String query,
             int topK
