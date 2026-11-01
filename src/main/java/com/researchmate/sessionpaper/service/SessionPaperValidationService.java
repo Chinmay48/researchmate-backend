@@ -1,8 +1,8 @@
 package com.researchmate.sessionpaper.service;
 
-import com.researchmate.session.repository.ResearchSessionRepository;
 import com.researchmate.sessionpaper.entity.SessionPaper;
 import com.researchmate.sessionpaper.repository.SessionPaperRepository;
+import com.researchmate.session.repository.ResearchSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,24 +16,18 @@ public class SessionPaperValidationService {
     private final ResearchSessionRepository sessionRepository;
     private final SessionPaperRepository sessionPaperRepository;
 
-    public List<UUID> getSelectedPaperIds(
-            UUID sessionId,
-            UUID userId
-    ) {
+    public List<UUID> getSelectedPaperIds(UUID sessionId, UUID userId) {
 
-        // Step 1: Verify session ownership
-        sessionRepository.findByIdAndProject_User_Id(
-                sessionId,
-                userId
-        ).orElseThrow(() -> new IllegalArgumentException(
-                "Research session not found or access denied"
-        ));
+        // Verify session ownership
+        sessionRepository.findByIdAndProject_User_Id(sessionId, userId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Research session not found or access denied"
+                ));
 
-        // Step 2: Retrieve papers selected in this session
+        // Fetch only selected papers
         List<SessionPaper> sessionPapers =
-                sessionPaperRepository.findAllBySession_IdOrderByRankAsc(
-                        sessionId
-                );
+                sessionPaperRepository
+                        .findAllBySession_IdAndSelectedTrueOrderByRankAsc(sessionId);
 
         if (sessionPapers.isEmpty()) {
             throw new IllegalStateException(
@@ -41,7 +35,6 @@ public class SessionPaperValidationService {
             );
         }
 
-        // Step 3: Return selected paper IDs
         return sessionPapers.stream()
                 .map(sessionPaper -> sessionPaper.getPaper().getId())
                 .toList();

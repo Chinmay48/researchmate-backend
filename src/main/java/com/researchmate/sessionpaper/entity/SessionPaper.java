@@ -47,6 +47,10 @@ public class SessionPaper {
 
     private Double hybridScore;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean selected = false;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

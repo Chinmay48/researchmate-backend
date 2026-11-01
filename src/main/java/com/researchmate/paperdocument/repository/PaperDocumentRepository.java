@@ -107,4 +107,6 @@ public interface PaperDocumentRepository
 
     @EntityGraph(attributePaths = "paper")
     Optional<PaperDocument> findWithPaperById(UUID id);
+
+    List<PaperDocument> findAllByPaper_IdIn(List<UUID> paperIds);
 }
