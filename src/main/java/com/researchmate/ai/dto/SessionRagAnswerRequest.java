@@ -7,7 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.UUID;
+
 public record SessionRagAnswerRequest(
+
+        @NotNull(message = "Chat ID is required")
+        UUID chatId,
 
         @NotBlank(message = "Question cannot be empty")
         @Size(max = 2000, message = "Question cannot exceed 2000 characters")

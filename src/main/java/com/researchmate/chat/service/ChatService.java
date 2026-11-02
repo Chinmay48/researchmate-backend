@@ -79,4 +79,28 @@ public class ChatService {
                 chat.getUpdatedAt()
         );
     }
+    @Transactional(readOnly = true)
+    public void validateChatAccess(
+            UUID chatId,
+            UUID sessionId,
+            String email) {
+
+        UUID userId = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User not found"))
+                .getId();
+
+        Chat chat = chatRepository
+                .findByIdAndSession_Project_User_Id(chatId, userId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Chat not found or access denied"
+                        ));
+
+        if (!chat.getSession().getId().equals(sessionId)) {
+            throw new IllegalArgumentException(
+                    "Chat does not belong to the specified research session"
+            );
+        }
+    }
 }

@@ -2,12 +2,16 @@ package com.researchmate.ai.service;
 
 import com.researchmate.ai.dto.SessionRagAnswerRequest;
 import com.researchmate.ai.dto.SessionRagAnswerResponse;
+import com.researchmate.chat.service.ChatMessagePersistenceService;
+import com.researchmate.chat.service.ChatService;
 import com.researchmate.sessionpaper.dto.SessionRagChunkResponse;
 import com.researchmate.sessionpaper.service.SessionPaperRagRetrievalService;
+import com.researchmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -17,12 +21,23 @@ public class SessionRagAnswerService {
     private final RagPromptBuilder promptBuilder;
     private final GeminiService geminiService;
 
+    private final ChatService chatService;
+    private final ChatMessagePersistenceService persistenceService;
+    private final UserRepository userRepository;
+
     public SessionRagAnswerResponse generateAnswer(
-            java.util.UUID sessionId,
+            UUID sessionId,
             String email,
             SessionRagAnswerRequest request) {
 
-        // 1. Retrieve relevant chunks from selected papers
+        // 1. Validate chat ownership and session relationship
+        chatService.validateChatAccess(
+                request.chatId(),
+                sessionId,
+                email
+        );
+
+        // 2. Retrieve relevant chunks from selected papers
         List<SessionRagChunkResponse> chunks =
                 retrievalService.retrieveSessionChunks(
                         sessionId,
@@ -31,17 +46,31 @@ public class SessionRagAnswerService {
                         request.topK()
                 );
 
-        // 2. Construct prompt according to answer mode
+        // 3. Save the user's question
+        persistenceService.saveUserMessage(
+                request.chatId(),
+                request.question()
+        );
+
+        // 4. Construct the prompt
         String prompt = promptBuilder.buildPrompt(
                 request.question(),
                 request.answerMode(),
                 chunks
         );
 
-        // 3. Generate answer using Gemini
+        // 5. Generate the answer using Gemini
         String answer = geminiService.generateResponse(prompt);
 
-        // 4. Prepare source references
+        // 6. Save Gemini's answer and its exact retrieved sources
+        persistenceService.saveAssistantMessage(
+                request.chatId(),
+                answer,
+                request.answerMode(),
+                chunks
+        );
+
+        // 7. Prepare source references for API response
         List<SessionRagAnswerResponse.SourceCitation> sources =
                 chunks.stream()
                         .map(chunk ->
@@ -55,7 +84,6 @@ public class SessionRagAnswerService {
                         )
                         .toList();
 
-        // 5. Return final response
         return new SessionRagAnswerResponse(
                 answer,
                 request.answerMode(),
