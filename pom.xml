@@ -139,6 +139,11 @@
 			<version>0.36.0</version>
 		</dependency>
 		<dependency>
+			<groupId>com.google.genai</groupId>
+			<artifactId>google-genai</artifactId>
+			<version>1.79.0</version>
+		</dependency>
+		<dependency>
 			<groupId>com.microsoft.onnxruntime</groupId>
 			<artifactId>onnxruntime</artifactId>
 			<version>1.22.0</version>
