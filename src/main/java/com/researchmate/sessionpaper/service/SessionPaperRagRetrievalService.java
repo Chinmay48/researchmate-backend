@@ -1,5 +1,6 @@
 package com.researchmate.sessionpaper.service;
 
+import com.researchmate.chat.repository.ChatPaperRepository;
 import com.researchmate.paperdocument.entity.PaperDocument;
 import com.researchmate.paperdocument.projection.RetrievedChunk;
 import com.researchmate.paperdocument.repository.PaperDocumentRepository;
@@ -25,6 +26,7 @@ public class SessionPaperRagRetrievalService {
     private final PaperDocumentRepository paperDocumentRepository;
     private final PaperDocumentSchedulingService schedulingService;
     private final UserRepository userRepository;
+    private final ChatPaperRepository chatPaperRepository;
     public List<SessionRagChunkResponse> retrieveSessionChunks(
             UUID sessionId,
             String email,
@@ -135,5 +137,41 @@ public class SessionPaperRagRetrievalService {
                         chunk.getDistance()
                 ))
                 .toList();
+    }
+    public List<SessionRagChunkResponse> retrieveChatChunks(
+            UUID sessionId,
+            UUID chatId,
+            String email,
+            String query,
+            int topK
+    ) {
+        UUID userId = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getId();
+
+        // Get papers selected specifically for this chat
+        List<UUID> selectedPaperIds =
+                chatPaperRepository.findPaperIdsByChatId(chatId);
+
+        if (selectedPaperIds.isEmpty()) {
+            throw new IllegalStateException(
+                    "No papers selected for this chat. Please select at least one paper."
+            );
+        }
+
+        // Preserve the existing document processing workflow
+        scheduleMissingDocuments(selectedPaperIds);
+        validatePapersReady(selectedPaperIds);
+
+        List<RetrievedChunk> chunks =
+                retrievalService.retrieveRelevantChunks(query, selectedPaperIds, topK);
+
+        if (chunks.isEmpty()) {
+            throw new IllegalStateException(
+                    "No relevant chunks found in the selected papers"
+            );
+        }
+
+        return mapToResponses(chunks);
     }
 }

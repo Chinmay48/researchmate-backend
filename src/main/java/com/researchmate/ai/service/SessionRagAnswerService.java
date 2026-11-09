@@ -39,8 +39,9 @@ public class SessionRagAnswerService {
 
         // 2. Retrieve relevant chunks from selected papers
         List<SessionRagChunkResponse> chunks =
-                retrievalService.retrieveSessionChunks(
+                retrievalService.retrieveChatChunks(
                         sessionId,
+                        request.chatId(),
                         email,
                         request.question(),
                         request.topK()
