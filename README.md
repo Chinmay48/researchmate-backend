@@ -795,32 +795,23 @@ Potential future enhancements:
 
 ## Screenshots
 
-Add screenshots of the actual application to the repository and replace
-the placeholders below with the corresponding relative image paths.
+### Landing Page
+![ResearchMate landing page](docs/images/landing-page.png)
 
-### Landing page
-
-`[Add landing page screenshot]`
+### Sign Up
+![ResearchMate sign up page](docs/images/signup.png)
 
 ### Dashboard
+![ResearchMate dashboard](docs/images/dashboard.png)
 
-`[Add dashboard screenshot]`
+### Project Workspace
+![ResearchMate project workspace](docs/images/project-page.png)
 
-### Project workspace
+### Session & Chat Workspace
+![ResearchMate session chat workspace](docs/images/session-workspace.png)
 
-`[Add project workspace screenshot]`
-
-### Paper discovery
-
-`[Add paper discovery and search results screenshot]`
-
-### Chat workspace
-
-`[Add chat workspace screenshot]`
-
-### Answer sources
-
-`[Add assistant answer with source references screenshot]`
+### Session Workspace — Answer & Citations
+![ResearchMate chat answer and citations](docs/images/session-workspace1.png)
 
 ## License
 
